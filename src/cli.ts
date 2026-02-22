@@ -1,12 +1,11 @@
 #!/usr/bin/env bun
 
 import { filterContent } from "./lib/content-filter";
-import { loadConfig } from "./lib/pattern-matcher";
+import { loadConfig, loadConfigFromString } from "./lib/pattern-matcher";
 import { readAuditLog, buildAuditConfig } from "./lib/audit";
-import { resolve, join } from "path";
+import { join } from "path";
 import { homedir } from "os";
-
-const CONFIG_PATH = resolve(import.meta.dir, "../config/filter-patterns.yaml");
+import { DEFAULT_CONFIG_YAML } from "./lib/default-config";
 
 function printUsage(): void {
   console.log(`Usage: content-filter <command> [options]
@@ -42,7 +41,7 @@ function main(): void {
   const jsonFlag = args.includes("--json");
   const configIdx = args.indexOf("--config");
   const configPath =
-    configIdx >= 0 ? args[configIdx + 1] ?? CONFIG_PATH : CONFIG_PATH;
+    configIdx >= 0 ? args[configIdx + 1] : undefined;
   const formatIdx = args.indexOf("--format");
   const formatOverride = formatIdx >= 0 ? args[formatIdx + 1] : undefined;
 
@@ -177,7 +176,9 @@ function main(): void {
 
     case "config": {
       try {
-        const config = loadConfig(configPath);
+        const config = configPath
+          ? loadConfig(configPath)
+          : loadConfigFromString(DEFAULT_CONFIG_YAML);
         if (jsonFlag) {
           console.log(
             JSON.stringify(

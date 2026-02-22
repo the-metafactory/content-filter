@@ -1,17 +1,38 @@
-import type { AuditConfig, FileFormat, FilterResult } from "./types";
-import { loadConfig, matchPatterns } from "./pattern-matcher";
+import type { AuditConfig, FileFormat, FilterConfig, FilterResult } from "./types";
+import { loadConfig, loadConfigFromString, matchPatterns } from "./pattern-matcher";
 import { detectEncoding } from "./encoding-detector";
 import { validateSchema } from "./schema-validator";
 import { scoreDetections, overallScore } from "./scoring";
-import { resolve } from "path";
 import {
   createAuditEntry,
   hashContent,
   generateSessionId,
   logAuditEntry,
 } from "./audit";
+import { DEFAULT_CONFIG_YAML } from "./default-config";
 
-const CONFIG_PATH = resolve(import.meta.dir, "../../config/filter-patterns.yaml");
+/**
+ * Resolve filter config with priority: explicit path > env var > embedded default.
+ *
+ * 1. If configPath is provided, load from that file (throws on error)
+ * 2. If PAI_CONTENT_FILTER_CONFIG env var is set, load from that path
+ * 3. Fall back to embedded default config (always available, even in compiled binaries)
+ */
+function resolveConfig(configPath?: string): FilterConfig {
+  // Priority 1: explicit path
+  if (configPath) {
+    return loadConfig(configPath);
+  }
+
+  // Priority 2: environment variable
+  const envPath = process.env.PAI_CONTENT_FILTER_CONFIG;
+  if (envPath) {
+    return loadConfig(envPath);
+  }
+
+  // Priority 3: embedded default (works in compiled binaries)
+  return loadConfigFromString(DEFAULT_CONFIG_YAML);
+}
 
 /**
  * Detect file format from extension.
@@ -78,7 +99,7 @@ export function filterContentString(
   auditOpts?: { sourceRepo?: string; sessionId?: string }
 ): FilterResult {
   try {
-    const config = loadConfig(configPath ?? CONFIG_PATH);
+    const config = resolveConfig(configPath);
 
     // Step 1: Encoding detection — short-circuit on match
     const encodings = detectEncoding(content, config.encoding_rules);
