@@ -164,6 +164,17 @@ function stripYamlComment(line: string): string {
 export function loadConfig(configPath: string): FilterConfig {
   const fs = require("fs");
   const text = fs.readFileSync(configPath, "utf-8") as string;
+  return loadConfigFromString(text);
+}
+
+/**
+ * Load and validate a filter configuration from a YAML string.
+ *
+ * Parses the string with a minimal purpose-built parser,
+ * validates with Zod schema, and verifies all regex patterns compile.
+ * Throws on invalid config or invalid regex.
+ */
+export function loadConfigFromString(text: string): FilterConfig {
   const raw = parseSimpleYaml(text);
   const config = FilterConfigSchema.parse(raw);
 

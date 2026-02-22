@@ -1,7 +1,8 @@
 // pai-content-filter: Inbound content security for PAI cross-project collaboration
 
 export { filterContent, filterContentString, detectFormat } from "./lib/content-filter";
-export { loadConfig, matchPatterns, luhnCheck, isPlaceholder } from "./lib/pattern-matcher";
+export { loadConfig, loadConfigFromString, matchPatterns, luhnCheck, isPlaceholder } from "./lib/pattern-matcher";
+export { DEFAULT_CONFIG_YAML } from "./lib/default-config";
 export { detectEncoding, looksLikeIdentifier } from "./lib/encoding-detector";
 export { validateSchema } from "./lib/schema-validator";
 export {
