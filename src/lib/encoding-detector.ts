@@ -88,6 +88,15 @@ export function detectEncoding(
           }
         }
 
+        // Skip base64 matches that are part of URL paths (/ is valid base64)
+        if (rule.type === "base64" && text.includes("/")) {
+          const before = line.slice(0, match.index);
+          if (/https?:\/\/\S*$/.test(before)) {
+            if (text.length === 0) regex.lastIndex++;
+            continue;
+          }
+        }
+
         // Skip base64 matches that look like code identifiers
         if (rule.type === "base64" && looksLikeIdentifier(text)) {
           if (text.length === 0) regex.lastIndex++;
