@@ -157,7 +157,7 @@ patterns:
   - id: TI-003
     name: file_operations
     category: tool_invocation
-    pattern: '(?:(?:write|create|delete|remove|modify|overwrite)\s+(?:the\s+)?file|rm\s+-(?:r|f|rf)\s|chmod\s+|chown\s+|mkfifo\s+|truncate\s+)'
+    pattern: '(?:(?:write|create|delete|remove|modify|overwrite)\s+(?:the\s+)?file|rm\s+-(?:r|f|rf)\s|chmod\s+|chown\s+|mkfifo\s+|truncate\s+[-/~.$])'
     severity: block
     description: File system modification commands
 
