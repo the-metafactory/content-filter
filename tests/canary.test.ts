@@ -1039,3 +1039,149 @@ describe("Performance benchmarks", () => {
     expect(median).toBeLessThan(1000);
   });
 });
+
+// ============================================================
+// Lethal Trifecta Attack Path Fixtures
+//
+// Test fixtures demonstrating the convergence of three
+// capabilities that transforms prompt injection into
+// credential exfiltration:
+//
+// 1. Private data access (credentials, files, env vars)
+// 2. Untrusted content exposure (calendar, email, GitHub)
+// 3. External communication (API calls, emails, webhooks)
+//
+// Each fixture contains a realistic attack payload that:
+// - Bypasses naive filtering (e.g., simple keyword blocking)
+// - Is caught by the current pattern library
+// - Demonstrates real-world attack vectors
+//
+// Reference: tests/fixtures/lethal-trifecta/README.md
+// ============================================================
+
+const fs = require("fs") as typeof import("fs");
+const path = require("path") as typeof import("path");
+
+describe("Lethal Trifecta attack path fixtures", () => {
+  const fixturesDir = path.join(__dirname, "fixtures", "lethal-trifecta");
+
+  test("calendar invite injection is BLOCKED", () => {
+    const content = fs.readFileSync(
+      path.join(fixturesDir, "calendar-invite-injection.yaml"),
+      "utf-8"
+    );
+    const result = filterContentString(
+      content,
+      "calendar-invite-injection.yaml",
+      "yaml"
+    );
+
+    // Should be blocked (either by schema validation failure or pattern matching)
+    // YAML format may fail schema validation before reaching pattern matching
+    expect(result.decision).toBe("BLOCKED");
+
+    // If patterns were matched (schema passed), verify attack was caught
+    if (result.matches.length > 0) {
+      const patternIds = result.matches.map((p) => p.pattern_id);
+      expect(
+        patternIds.includes("PI-002") || // role_play_trigger
+          patternIds.includes("EX-001") || // direct_exfil
+          patternIds.includes("EX-004") // environment_leak
+      ).toBe(true);
+    }
+  });
+
+  test("GitHub issue injection is BLOCKED", () => {
+    const content = fs.readFileSync(
+      path.join(fixturesDir, "github-issue-injection.md"),
+      "utf-8"
+    );
+    const result = filterContentString(
+      content,
+      "github-issue-injection.md",
+      "markdown"
+    );
+
+    // Should be blocked (either by schema validation or pattern matching)
+    expect(result.decision).toBe("BLOCKED");
+
+    // If patterns were matched, verify attack was caught
+    if (result.matches.length > 0) {
+      const patternIds = result.matches.map((p) => p.pattern_id);
+      expect(
+        patternIds.includes("PI-012") || // override previous instructions
+          patternIds.includes("PI-004") || // for every future interaction
+          patternIds.includes("EX-004") || // print env
+          patternIds.includes("PI-008") // keep it secret
+      ).toBe(true);
+    }
+  });
+
+  test("email subject/body injection is BLOCKED", () => {
+    const content = fs.readFileSync(
+      path.join(fixturesDir, "email-subject-injection.txt"),
+      "utf-8"
+    );
+    const result = filterContentString(
+      content,
+      "email-subject-injection.txt",
+      "text"
+    );
+
+    // Should be blocked by PI-009 (authority_claim), TI-004 (mcp_tool_invocation), PI-008 (output_manipulation), EX-001 (direct_exfil)
+    expect(result.decision).toBe("BLOCKED");
+    expect(result.matches.length).toBeGreaterThan(0);
+
+    // Verify specific patterns caught the attack
+    const patternIds = result.matches.map((p) => p.pattern_id);
+    expect(
+      patternIds.includes("PI-009") || // authorized administrator
+        patternIds.includes("TI-004") || // use the email tool
+        patternIds.includes("PI-008") || // keep it secret
+        patternIds.includes("EX-001") // send to
+    ).toBe(true);
+  });
+
+  test("PR description injection is BLOCKED", () => {
+    const content = fs.readFileSync(
+      path.join(fixturesDir, "pr-description-injection.md"),
+      "utf-8"
+    );
+    const result = filterContentString(
+      content,
+      "pr-description-injection.md",
+      "markdown"
+    );
+
+    // Should be blocked by PI-005 (delimiter_injection), PI-006 (jailbreak), TI-003 (file_operations), EX-003 (network_exfil)
+    expect(result.decision).toBe("BLOCKED");
+    expect(result.matches.length).toBeGreaterThan(0);
+
+    // Verify specific patterns caught the attack
+    const patternIds = result.matches.map((p) => p.pattern_id);
+    expect(
+      patternIds.includes("PI-005") || // <<SYS>>
+        patternIds.includes("PI-006") || // DAN mode
+        patternIds.includes("TI-003") || // cat .env
+        patternIds.includes("EX-003") // curl
+    ).toBe(true);
+  });
+
+  test("all Lethal Trifecta fixtures exist and are readable", () => {
+    const fixtures = [
+      "calendar-invite-injection.yaml",
+      "github-issue-injection.md",
+      "email-subject-injection.txt",
+      "pr-description-injection.md",
+      "README.md",
+    ];
+
+    for (const fixture of fixtures) {
+      const fixturePath = path.join(fixturesDir, fixture);
+      expect(fs.existsSync(fixturePath)).toBe(true);
+
+      const content = fs.readFileSync(fixturePath, "utf-8");
+      expect(content.length).toBeGreaterThan(0);
+    }
+  });
+});
