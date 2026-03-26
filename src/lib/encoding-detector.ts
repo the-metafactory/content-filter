@@ -106,6 +106,7 @@ export function detectEncoding(
         matches.push({
           type: rule.type,
           matched_text: text.length > 80 ? text.slice(0, 80) + "..." : text,
+          full_text: text, // Preserve full text for decoding
           line: lineIdx + 1,
           column: match.index + 1,
         });

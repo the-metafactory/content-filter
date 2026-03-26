@@ -83,9 +83,21 @@ export interface PatternMatch {
 
 export interface EncodingMatch {
   type: string;
-  matched_text: string;
+  matched_text: string; // May be truncated for display
+  full_text?: string; // Full text for decoding (not truncated)
   line: number;
   column: number;
+}
+
+export interface DecodedMatch extends PatternMatch {
+  /** Original encoded text that triggered this match */
+  encoded_original: string;
+  /** Encoding type (base64, unicode, hex, url_encoded, html_entity) */
+  encoding_type: string;
+  /** Line where the original encoded string was found */
+  encoded_line: number;
+  /** Column where the original encoded string was found */
+  encoded_column: number;
 }
 
 export interface SchemaResult {
@@ -117,6 +129,8 @@ export interface FilterResult {
   scored_detections?: ScoredDetection[];
   overall_confidence?: number; // 0.0 - 1.0
   overall_severity?: SeverityTier;
+  /** Pattern matches found in decoded encoded content (from decode-then-match step) */
+  decoded_matches?: DecodedMatch[];
 }
 
 // --- Audit Types (F-002) ---
