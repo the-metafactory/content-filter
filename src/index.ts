@@ -40,6 +40,14 @@ export {
 } from "./lib/sandbox-rewriter";
 export { scoreDetections, overallScore } from "./lib/scoring";
 export {
+  decodeBase64,
+  decodeUnicode,
+  decodeHex,
+  decodeUrlEncoded,
+  decodeHtmlEntity,
+  decodeEncodedMatches,
+} from "./lib/decoder";
+export {
   TypedReferenceSchema,
   TypedReferenceFilterResult,
   CrossProjectProfileSchema,
@@ -54,6 +62,7 @@ export type {
   FilterResult,
   PatternMatch,
   EncodingMatch,
+  DecodedMatch,
   EncodingRule,
   SchemaResult,
   FileFormat,
@@ -70,3 +79,4 @@ export type {
   ScoredDetection,
   ContentFilterBypassEvent,
 } from "./lib/types";
+export type { DecodedContent } from "./lib/decoder";

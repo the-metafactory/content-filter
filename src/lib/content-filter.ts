@@ -1,4 +1,4 @@
-import type { AuditConfig, FileFormat, FilterConfig, FilterResult } from "./types";
+import type { AuditConfig, DecodedMatch, FileFormat, FilterConfig, FilterResult, PatternMatch } from "./types";
 import { loadConfig, loadConfigFromString, matchPatterns } from "./pattern-matcher";
 import { detectEncoding } from "./encoding-detector";
 import { validateSchema } from "./schema-validator";
@@ -10,6 +10,7 @@ import {
   logAuditEntry,
 } from "./audit";
 import { DEFAULT_CONFIG_YAML } from "./default-config";
+import { decodeEncodedMatches } from "./decoder";
 
 /**
  * Resolve filter config with priority: explicit path > env var > embedded default.
@@ -32,6 +33,61 @@ function resolveConfig(configPath?: string): FilterConfig {
 
   // Priority 3: embedded default (works in compiled binaries)
   return loadConfigFromString(DEFAULT_CONFIG_YAML);
+}
+
+/**
+ * Decode encoded strings and match against injection/exfiltration patterns.
+ *
+ * Returns pattern matches found in decoded content with provenance metadata.
+ * Filters patterns to injection and exfiltration categories only.
+ * Deduplicates matches to avoid reporting the same pattern in both raw and decoded.
+ */
+function runDecodeAndMatch(
+  encodings: import("./types").EncodingMatch[],
+  config: FilterConfig
+): DecodedMatch[] {
+  if (encodings.length === 0) {
+    return [];
+  }
+
+  // Decode all encoding matches
+  const decodedContent = decodeEncodedMatches(encodings);
+  if (decodedContent.length === 0) {
+    return [];
+  }
+
+  // Filter patterns to injection and exfiltration categories only
+  const targetPatterns = config.patterns.filter(
+    (p) => p.category === "injection" || p.category === "exfiltration"
+  );
+
+  // Run pattern matching against each decoded string
+  const allMatches: DecodedMatch[] = [];
+  const seenPatternIds = new Set<string>();
+
+  for (const decoded of decodedContent) {
+    const patternMatches = matchPatterns(decoded.decoded, targetPatterns);
+
+    // Convert PatternMatch to DecodedMatch with provenance
+    for (const match of patternMatches) {
+      // Deduplicate: skip if we've already seen this pattern ID
+      if (seenPatternIds.has(match.pattern_id)) {
+        continue;
+      }
+
+      seenPatternIds.add(match.pattern_id);
+
+      allMatches.push({
+        ...match,
+        encoded_original: decoded.original,
+        encoding_type: decoded.type,
+        encoded_line: decoded.line,
+        encoded_column: decoded.column,
+      });
+    }
+  }
+
+  return allMatches;
 }
 
 /**
@@ -101,8 +157,14 @@ export function filterContentString(
   try {
     const config = resolveConfig(configPath);
 
-    // Step 1: Encoding detection — short-circuit on match
+    // Step 1: Encoding detection
     const encodings = detectEncoding(content, config.encoding_rules);
+
+    // Step 1a: Decode-then-match for injection/exfiltration patterns
+    const decodedMatches = runDecodeAndMatch(encodings, config);
+
+    // Short-circuit BLOCK if encodings found (backward compatible behavior)
+    // BUT include decoded_matches in result for better diagnostics
     if (encodings.length > 0) {
       const scored = scoreDetections([], encodings);
       const overall = overallScore(scored);
@@ -110,6 +172,7 @@ export function filterContentString(
         decision: "BLOCKED",
         matches: [],
         encodings,
+        decoded_matches: decodedMatches.length > 0 ? decodedMatches : undefined,
         schema_valid: false,
         file: filePath,
         format,
