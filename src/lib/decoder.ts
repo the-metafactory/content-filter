@@ -17,6 +17,14 @@ export interface DecodedContent {
 }
 
 /**
+ * Filter non-printable characters from decoded text.
+ * Keeps ASCII printable (0x20-0x7E) plus common whitespace (newline, CR, tab).
+ */
+function filterNonPrintable(text: string): string {
+  return text.replace(/[^\x20-\x7E\n\r\t]/g, "");
+}
+
+/**
  * Decode a base64-encoded string to plain text.
  *
  * Uses Node.js Buffer.from() for safe, well-tested decoding.
@@ -40,9 +48,7 @@ export function decodeBase64(text: string): string {
     const decoded = buffer.toString("utf-8");
 
     // Filter non-printable characters (keep only ASCII printable + common whitespace)
-    const printable = decoded.replace(/[^\x20-\x7E\n\r\t]/g, "");
-
-    return printable;
+    return filterNonPrintable(decoded);
   } catch {
     return "";
   }
@@ -69,9 +75,7 @@ export function decodeUnicode(text: string): string {
     });
 
     // Filter non-printable characters
-    const printable = decoded.replace(/[^\x20-\x7E\n\r\t]/g, "");
-
-    return printable;
+    return filterNonPrintable(decoded);
   } catch {
     return "";
   }
@@ -100,9 +104,7 @@ export function decodeHex(text: string): string {
     const decoded = chars.join("");
 
     // Filter non-printable characters
-    const printable = decoded.replace(/[^\x20-\x7E\n\r\t]/g, "");
-
-    return printable;
+    return filterNonPrintable(decoded);
   } catch {
     return "";
   }
@@ -119,9 +121,7 @@ export function decodeUrlEncoded(text: string): string {
     const decoded = decodeURIComponent(text);
 
     // Filter non-printable characters
-    const printable = decoded.replace(/[^\x20-\x7E\n\r\t]/g, "");
-
-    return printable;
+    return filterNonPrintable(decoded);
   } catch {
     return "";
   }
@@ -149,9 +149,7 @@ export function decodeHtmlEntity(text: string): string {
     });
 
     // Filter non-printable characters
-    const printable = decoded.replace(/[^\x20-\x7E\n\r\t]/g, "");
-
-    return printable;
+    return filterNonPrintable(decoded);
   } catch {
     return "";
   }
