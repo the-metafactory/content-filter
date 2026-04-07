@@ -1,6 +1,6 @@
-# pai-content-filter
+# @metafactory/content-filter
 
-Inbound content security for PAI cross-project collaboration.
+Inbound content security for agent workflows. Formerly published as `pai-content-filter`.
 
 ## Stack
 
