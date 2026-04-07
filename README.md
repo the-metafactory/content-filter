@@ -1,6 +1,8 @@
-# pai-content-filter
+# @metafactory/content-filter
 
-Inbound content security for [PAI](https://github.com/danielmiessler/PAI) agents. Scans any externally-sourced content before an agent reads it.
+Inbound content security for agent workflows. Scans any externally-sourced content before an agent reads it.
+
+> **Note:** This package was previously published as `pai-content-filter` under `jcfischer/pai-content-filter`. It was transferred to the metafactory org on 2026-04-07 and renamed to drop the `pai-` prefix. The security model and API are unchanged.
 
 ## What This Does
 
@@ -118,7 +120,7 @@ Exit codes: 0 (ALLOWED/HUMAN_REVIEW), 1 (error), 2 (BLOCKED).
 For embedding the filter in other tools:
 
 ```typescript
-import { filterContent, filterContentString } from "pai-content-filter";
+import { filterContent, filterContentString } from "@metafactory/content-filter";
 
 // Filter a file
 const result = filterContent("path/to/EXTEND.yaml");
@@ -128,11 +130,11 @@ const result = filterContent("path/to/EXTEND.yaml");
 const result = filterContentString(content, "file.yaml", "yaml");
 
 // Create a typed reference from allowed content
-import { createTypedReference } from "pai-content-filter";
+import { createTypedReference } from "@metafactory/content-filter";
 const ref = createTypedReference(result, content, { name: "project" });
 
 // Override a blocked result (requires reason + approver)
-import { overrideDecision } from "pai-content-filter";
+import { overrideDecision } from "@metafactory/content-filter";
 const override = overrideDecision(result, content, "admin", "reviewed manually", auditConfig);
 ```
 

@@ -1,4 +1,4 @@
-// pai-content-filter: Inbound content security for PAI cross-project collaboration
+// @metafactory/content-filter: Inbound content security for agent workflows
 
 export { filterContent, filterContentString, detectFormat } from "./lib/content-filter";
 export { loadConfig, loadConfigFromString, matchPatterns, luhnCheck, isPlaceholder } from "./lib/pattern-matcher";
